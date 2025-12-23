@@ -18,7 +18,7 @@ export function Hero({ onTryOut }: HeroProps) {
             </div>
           </div>
           <h1 className="text-5xl sm:text-6xl lg:text-7xl mb-6 tracking-tight text-white">
-            Dockerify Planner & Verifier
+            NoIssues: An LLM Agent for Automated Issue Verification
           </h1>
           <p className="text-xl sm:text-2xl text-slate-300 max-w-3xl mx-auto mb-12">
             Automatically create self-contained container environments that reproduce software issues with minimal human effort

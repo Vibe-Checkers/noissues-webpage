@@ -15,7 +15,7 @@ export function Footer({ onAbout }: FooterProps) {
               <Container className="w-6 h-6 text-blue-400" />
             </div>
             <div>
-              <h3 className="text-xl text-white">Dockerify Planner & Verifier</h3>
+              <h3 className="text-xl text-white">NoIssues Planner & Verifier</h3>
               <p className="text-slate-400 text-sm">Automated containerized issue reproduction</p>
             </div>
           </div>
