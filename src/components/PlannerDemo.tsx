@@ -1,14 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { FolderOpen, Package, Wrench, FileText, CheckCircle, Loader2, Terminal } from 'lucide-react';
-
-// TODO: Fix for missing raw log file error in dev. If missing, use empty string fallback.
-let rawLogData: string = '';
-try {
-  // @ts-ignore
-  rawLogData = require('../logs.txt?raw');
-} catch {
-  rawLogData = '';
-}
+// Raw log data captured from planner run
+// @ts-expect-error Vite raw import of text file
+// eslint-disable-next-line import/no-unresolved
+import rawLogData from '../logs.txt?raw';
 
 interface PlannerDemoProps {
   repositoryUrl: string;
