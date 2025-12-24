@@ -6,20 +6,8 @@
 FROM node:20-slim AS build
 WORKDIR /app
 # Install the workspace package manager
-RUN npm install -g pnpm
-# Install dependencies (workspace aware)
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-RUN pnpm install
-# Copy the rest of the source and build
-COPY . .
-RUN pnpm -w build
-
-FROM node:20-slim
-WORKDIR /app
+RUN npm install chart.js
 # Copy built artifacts from the builder stage
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/package.json ./package.json
-COPY --from=build /app/README.md ./README.md
+RUN cp -r node_modules/chart.js/dist ./dist
 # Optional: ensure a minimal runtime for library usage
 CMD ["node", "-e", "console.log('Chart.js dist ready')"]
-
