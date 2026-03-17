@@ -2,24 +2,68 @@ import { neon } from '@neondatabase/serverless';
 import { BatchRun, Run, Iteration, Step, VerifyBuildDetail, RunArtifact } from '../types/database';
 
 // Use environment variable for database connection
-const DATABASE_URL = "postgresql://neondb_owner:npg_NRtmXhij2JP8@ep-sweet-star-aldiirsj-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+const DATABASE_URL = "postgresql://neondb_owner:npg_NRtmXhij2JP8@ep-curly-rain-al6tqu0g-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
 
 const sql = neon(DATABASE_URL);
 
 export const getBatchRuns = async (): Promise<BatchRun[]> => {
 	const result = await sql`
     SELECT 
-      b.*, 
+      b.id,
+      b.tag,
+      b.started_at,
+      b.finished_at,
+      b.worker_count,
+      b.config_json,
       COUNT(r.id) as repo_count,
       COUNT(CASE WHEN r.status = 'success' THEN 1 END) as success_count,
       COUNT(CASE WHEN r.status = 'failure' THEN 1 END) as failure_count,
       COUNT(CASE WHEN r.status = 'running' THEN 1 END) as running_count
     FROM batch_run b
     LEFT JOIN run r ON b.id = r.batch_id
-    GROUP BY b.id
+    GROUP BY b.id, b.tag, b.started_at, b.finished_at, b.worker_count, b.config_json
     ORDER BY b.started_at DESC
   `;
 	return result as unknown as BatchRun[];
+};
+
+export const updateBatchTag = async (id: string, tag: string): Promise<void> => {
+	await sql`UPDATE batch_run SET tag = ${tag} WHERE id = ${id}`;
+};
+
+export const deleteBatchRun = async (id: string): Promise<void> => {
+	// Cascade deletes manually for safety if foreign keys don't have ON DELETE CASCADE
+	// We delete from bottom up: verify_build_detail -> step -> iteration -> run_artifact -> run -> batch_run
+
+	await sql`
+		DELETE FROM verify_build_detail WHERE step_id IN (
+			SELECT s.id FROM step s 
+			JOIN iteration i ON s.iteration_id = i.id 
+			JOIN run r ON i.run_id = r.id 
+			WHERE r.batch_id = ${id}
+		)
+	`;
+	await sql`
+		DELETE FROM step WHERE iteration_id IN (
+			SELECT i.id FROM iteration i 
+			JOIN run r ON i.run_id = r.id 
+			WHERE r.batch_id = ${id}
+		)
+	`;
+	await sql`
+		DELETE FROM iteration WHERE run_id IN (
+			SELECT r.id FROM run r 
+			WHERE r.batch_id = ${id}
+		)
+	`;
+	await sql`
+		DELETE FROM run_artifact WHERE run_id IN (
+			SELECT r.id FROM run r 
+			WHERE r.batch_id = ${id}
+		)
+	`;
+	await sql`DELETE FROM run WHERE batch_id = ${id}`;
+	await sql`DELETE FROM batch_run WHERE id = ${id}`;
 };
 
 export const getRunsByBatch = async (batchId: string): Promise<Run[]> => {

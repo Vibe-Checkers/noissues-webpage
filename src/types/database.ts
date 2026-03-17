@@ -1,5 +1,6 @@
 export interface BatchRun {
 	id: string;
+	tag: string | null;
 	started_at: string;
 	finished_at: string | null;
 	worker_count: number;

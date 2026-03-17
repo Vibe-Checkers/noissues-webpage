@@ -6,7 +6,9 @@ import {
 	getIterationsByRun,
 	getStepsByIteration,
 	getVerifyDetailByStep,
-	getArtifactsByRun
+	getArtifactsByRun,
+	updateBatchTag,
+	deleteBatchRun
 } from '../../services/mockData';
 import {
 	BatchRun,
@@ -16,7 +18,7 @@ import {
 	VerifyBuildDetail,
 	RunArtifact
 } from '../../types/database';
-import { ChevronRight, Database, Box, Play, CheckCircle2, XCircle, FileCode, Search, Loader2 } from 'lucide-react';
+import { ChevronRight, Database, Box, Play, CheckCircle2, XCircle, FileCode, Search, Loader2, Edit2, Trash2, Check, X, Tag } from 'lucide-react';
 
 type ViewState =
 	| { type: 'batch-list' }
@@ -36,43 +38,72 @@ const DataExplorer: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 	const [steps, setSteps] = useState<Step[]>([]);
 	const [verifyDetails, setVerifyDetails] = useState<Record<string, VerifyBuildDetail | undefined>>({});
 
-	useEffect(() => {
-		const fetchData = async () => {
-			setIsLoading(true);
-			try {
-				if (viewState.type === 'batch-list') {
-					const data = await getBatchRuns();
-					setBatches(data);
-				} else if (viewState.type === 'run-list') {
-					const data = await getRunsByBatch(viewState.batch.id);
-					setRuns(data);
-				} else if (viewState.type === 'run-detail') {
-					const [iters, arts] = await Promise.all([
-						getIterationsByRun(viewState.run.id),
-						getArtifactsByRun(viewState.run.id)
-					]);
-					setIterations(iters);
-					setArtifacts(arts);
-				} else if (viewState.type === 'iteration-detail') {
-					const iterSteps = await getStepsByIteration(viewState.iteration.id);
-					setSteps(iterSteps);
+	// Batch Management State
+	const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
+	const [tempTag, setTempTag] = useState<string>('');
+	const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
-					// Fetch verify details for each step
-					const details: Record<string, VerifyBuildDetail | undefined> = {};
-					await Promise.all(iterSteps.map(async (step) => {
-						details[step.id] = await getVerifyDetailByStep(step.id);
-					}));
-					setVerifyDetails(details);
-				}
-			} catch (error) {
-				console.error('Error fetching data:', error);
-			} finally {
-				setIsLoading(false);
+	const fetchData = async () => {
+		setIsLoading(true);
+		try {
+			if (viewState.type === 'batch-list') {
+				const data = await getBatchRuns();
+				setBatches(data);
+			} else if (viewState.type === 'run-list') {
+				const data = await getRunsByBatch(viewState.batch.id);
+				setRuns(data);
+			} else if (viewState.type === 'run-detail') {
+				const [iters, arts] = await Promise.all([
+					getIterationsByRun(viewState.run.id),
+					getArtifactsByRun(viewState.run.id)
+				]);
+				setIterations(iters);
+				setArtifacts(arts);
+			} else if (viewState.type === 'iteration-detail') {
+				const iterSteps = await getStepsByIteration(viewState.iteration.id);
+				setSteps(iterSteps);
+
+				// Fetch verify details for each step
+				const details: Record<string, VerifyBuildDetail | undefined> = {};
+				await Promise.all(iterSteps.map(async (step) => {
+					details[step.id] = await getVerifyDetailByStep(step.id);
+				}));
+				setVerifyDetails(details);
 			}
-		};
+		} catch (error) {
+			console.error('Error fetching data:', error);
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
+	useEffect(() => {
 		fetchData();
 	}, [viewState]);
+
+	const handleUpdateTag = async (id: string) => {
+		if (!tempTag.trim()) return;
+		try {
+			await updateBatchTag(id, tempTag);
+			setEditingBatchId(null);
+			fetchData();
+		} catch (error) {
+			console.error('Failed to update tag:', error);
+		}
+	};
+
+	const handleDeleteBatch = async (id: string) => {
+		if (!window.confirm('Are you sure you want to delete this batch and ALL related data? This action cannot be undone.')) return;
+		setIsDeletingId(id);
+		try {
+			await deleteBatchRun(id);
+			fetchData();
+		} catch (error) {
+			console.error('Failed to delete batch:', error);
+		} finally {
+			setIsDeletingId(null);
+		}
+	};
 
 	const renderBreadcrumbs = () => {
 		const items = [{ label: 'All Batches', onClick: () => setViewState({ type: 'batch-list' }) }];
@@ -129,34 +160,91 @@ const DataExplorer: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 				{batches.map(batch => (
 					<div
 						key={batch.id}
-						className="data-card"
-						onClick={() => setViewState({ type: 'run-list', batch })}
+						className={`data-card relative group/card ${isDeletingId === batch.id ? 'opacity-50 pointer-events-none' : ''}`}
 					>
-						<div className="flex justify-between items-start mb-4">
-							<h3 className="text-lg font-semibold text-sky-400">{batch.id}</h3>
-							<Box size={20} className="text-slate-500" />
+						<div className="absolute top-4 right-4 flex gap-2">
+							<button
+								onClick={(e) => {
+									e.stopPropagation();
+									handleDeleteBatch(batch.id);
+								}}
+								className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-all opacity-40 hover:opacity-100 border border-red-500/10 hover:border-red-500/30"
+								title="Delete Batch"
+							>
+								{isDeletingId === batch.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+							</button>
 						</div>
-						<div className="space-y-2">
-							<div className="flex justify-between text-sm">
-								<span className="text-slate-400">Started:</span>
-								<span>{new Date(batch.started_at).toLocaleString()}</span>
-							</div>
-							<div className="flex justify-between text-sm">
-								<span className="text-slate-400">Repos:</span>
-								<span>{batch.repo_count}</span>
-							</div>
-							<div className="metric-grid">
-								<div className="metric-item">
-									<span className="metric-label">Success</span>
-									<span className="metric-value text-green-400">{batch.success_count || 0}</span>
+
+						<div onClick={() => setViewState({ type: 'run-list', batch })}>
+							<div className="flex justify-between items-start mb-4 pr-8">
+								<div className="flex flex-col gap-1 flex-1">
+									{editingBatchId === batch.id ? (
+										<div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+											<input
+												autoFocus
+												type="text"
+												value={tempTag}
+												onChange={(e) => setTempTag(e.target.value)}
+												onKeyDown={(e) => {
+													if (e.key === 'Enter') handleUpdateTag(batch.id);
+													if (e.key === 'Escape') setEditingBatchId(null);
+												}}
+												className="bg-slate-900 border border-sky-500/30 rounded px-2 py-1 text-sm text-white focus:outline-none w-full"
+											/>
+											<button onClick={() => handleUpdateTag(batch.id)} className="text-green-500 hover:text-green-400">
+												<Check size={16} />
+											</button>
+											<button onClick={() => setEditingBatchId(null)} className="text-slate-500 hover:text-slate-400">
+												<X size={16} />
+											</button>
+										</div>
+									) : (
+										<div className="flex items-center gap-2 group/tag">
+											<div className="flex items-center gap-2">
+												<Tag size={16} className="text-sky-500/50" />
+												<h3 className="text-lg font-semibold text-sky-400 truncate max-w-[200px]">
+													{batch.tag || 'Untagged Batch'}
+												</h3>
+											</div>
+											<button
+												onClick={(e) => {
+													e.stopPropagation();
+													setEditingBatchId(batch.id);
+													setTempTag(batch.tag || '');
+												}}
+												className="p-1.5 hover:bg-slate-800 rounded-lg transition-all opacity-40 hover:opacity-100"
+												title="Edit Tag"
+											>
+												<Edit2 size={14} className="text-slate-400" />
+											</button>
+										</div>
+									)}
+									<span className="text-[10px] text-slate-600 font-mono tracking-tighter">ID: {batch.id}</span>
 								</div>
-								<div className="metric-item">
-									<span className="metric-label">Running</span>
-									<span className="metric-value text-sky-400">{batch.running_count || 0}</span>
+								{!editingBatchId && <Box size={20} className="text-slate-700" />}
+							</div>
+							<div className="space-y-2">
+								<div className="flex justify-between text-sm">
+									<span className="text-slate-400">Started:</span>
+									<span>{new Date(batch.started_at).toLocaleString()}</span>
 								</div>
-								<div className="metric-item">
-									<span className="metric-label">Failure</span>
-									<span className="metric-value text-red-400">{batch.failure_count || 0}</span>
+								<div className="flex justify-between text-sm">
+									<span className="text-slate-400">Repos:</span>
+									<span>{batch.repo_count}</span>
+								</div>
+								<div className="metric-grid">
+									<div className="metric-item">
+										<span className="metric-label">Success</span>
+										<span className="metric-value text-green-400">{batch.success_count || 0}</span>
+									</div>
+									<div className="metric-item">
+										<span className="metric-label">Running</span>
+										<span className="metric-value text-sky-400">{batch.running_count || 0}</span>
+									</div>
+									<div className="metric-item">
+										<span className="metric-label">Failure</span>
+										<span className="metric-value text-red-400">{batch.failure_count || 0}</span>
+									</div>
 								</div>
 							</div>
 						</div>
