@@ -268,7 +268,10 @@ const DataExplorer: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 								<h3 className="text-md font-semibold text-white truncate w-48">{run.repo_slug}</h3>
 								<span className="text-xs text-slate-500">{run.detected_language}</span>
 							</div>
-							<span className={`status-badge ${run.status === 'success' ? 'status-success' : 'status-failure'}`}>
+							<span className={`status-badge ${run.status === 'success' ? 'status-success' :
+									run.status === 'running' ? 'status-running' :
+										'status-failure'
+								}`}>
 								{run.status}
 							</span>
 						</div>
