@@ -2,7 +2,7 @@ import { neon } from '@neondatabase/serverless';
 import { BatchRun, Run, Iteration, Step, VerifyBuildDetail, RunArtifact } from '../types/database';
 
 // Use environment variable for database connection
-const DATABASE_URL = import.meta.env.VITE_DATABASE_URL;
+const DATABASE_URL = "postgresql://neondb_owner:npg_NRtmXhij2JP8@ep-sweet-star-aldiirsj-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
 
 const sql = neon(DATABASE_URL);
 
