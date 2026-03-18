@@ -239,7 +239,7 @@ const DataExplorer: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 									</div>
 									<div className="metric-item">
 										<span className="metric-label">Running</span>
-										<span className="metric-value text-sky-400">{batch.running_count || 0}</span>
+										<span className="metric-value text-yellow-400">{batch.running_count || 0}</span>
 									</div>
 									<div className="metric-item">
 										<span className="metric-label">Failure</span>
@@ -269,8 +269,8 @@ const DataExplorer: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 								<span className="text-xs text-slate-500">{run.detected_language}</span>
 							</div>
 							<span className={`status-badge ${run.status === 'success' ? 'status-success' :
-									run.status === 'running' ? 'status-running' :
-										'status-failure'
+								run.status === 'running' ? 'status-running' :
+									'status-failure'
 								}`}>
 								{run.status}
 							</span>

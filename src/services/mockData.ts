@@ -15,13 +15,13 @@ export const getBatchRuns = async (): Promise<BatchRun[]> => {
       b.finished_at,
       b.worker_count,
       b.config_json,
-      COUNT(r.id) as repo_count,
+      b.repo_count,
       COUNT(CASE WHEN r.status = 'success' THEN 1 END) as success_count,
       COUNT(CASE WHEN r.status = 'failure' THEN 1 END) as failure_count,
       COUNT(CASE WHEN r.status = 'running' THEN 1 END) as running_count
     FROM batch_run b
     LEFT JOIN run r ON b.id = r.batch_id
-    GROUP BY b.id, b.tag, b.started_at, b.finished_at, b.worker_count, b.config_json
+    GROUP BY b.id, b.tag, b.started_at, b.finished_at, b.worker_count, b.config_json, b.repo_count
     ORDER BY b.started_at DESC
   `;
 	return result as unknown as BatchRun[];
