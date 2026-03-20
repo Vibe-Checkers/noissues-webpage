@@ -120,6 +120,12 @@
 	border: 1px solid rgba(234, 179, 8, 0.3);
 }
 
+.status-waiting {
+	background: rgba(56, 189, 248, 0.1);
+	color: #7dd3fc;
+	border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
 .fade-in {
 	animation: fadeIn 0.5s ease-out;
 }

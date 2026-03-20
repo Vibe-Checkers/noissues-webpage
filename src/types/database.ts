@@ -8,6 +8,8 @@ export interface BatchRun {
 	success_count: number;
 	failure_count: number;
 	running_count: number;
+	waiting_count: number;
+	ablation: string | null;
 	total_prompt_tokens: number;
 	total_completion_tokens: number;
 	config_json: string | null;

@@ -205,6 +205,11 @@ const DataExplorer: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 												<h3 className="text-lg font-semibold text-sky-400 truncate max-w-[200px]">
 													{batch.tag || 'Untagged Batch'}
 												</h3>
+												{batch.ablation && (
+													<span className="px-2 py-0.5 bg-sky-500/10 border border-sky-500/20 text-sky-400 text-[10px] uppercase tracking-wider rounded font-bold">
+														{batch.ablation}
+													</span>
+												)}
 											</div>
 											<button
 												onClick={(e) => {
@@ -242,6 +247,10 @@ const DataExplorer: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 										<span className="metric-value text-yellow-400">{batch.running_count || 0}</span>
 									</div>
 									<div className="metric-item">
+										<span className="metric-label">Waiting</span>
+										<span className="metric-value text-sky-300">{batch.waiting_count || 0}</span>
+									</div>
+									<div className="metric-item">
 										<span className="metric-label">Failure</span>
 										<span className="metric-value text-red-400">{batch.failure_count || 0}</span>
 									</div>
@@ -269,8 +278,9 @@ const DataExplorer: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 								<span className="text-xs text-slate-500">{run.detected_language}</span>
 							</div>
 							<span className={`status-badge ${run.status === 'success' ? 'status-success' :
-								run.status === 'running' ? 'status-running' :
-									'status-failure'
+									run.status === 'running' ? 'status-running' :
+										run.status === 'waiting' ? 'status-waiting' :
+											'status-failure'
 								}`}>
 								{run.status}
 							</span>
